@@ -5,6 +5,8 @@ import requests
 import re
 import random
 import shutil
+import os
+import time
 def parse (imgHash, constant): 
     q = 4
     hashlib.md5()   
@@ -66,11 +68,12 @@ headers={
     'User-Agent':'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.94 Safari/537.36'
 }
 
-def getConstantAndHash():
-    page=BeautifulSoup(requests.get('http://jandan.net/ooxx',headers=headers).text,"lxml")
-    preUrl='http:'+page.select('.previous-comment-page')[0]['href']
-    html=requests.get(preUrl,headers=headers).text
-    
+def getConstantAndHash(url):
+    # page=BeautifulSoup(requests.get('http://jandan.net/ooxx',headers=headers).text,"lxml")
+    # preUrl='http:'+page.select('.previous-comment-page')[0]['href']
+    # html=requests.get(preUrl,headers=headers).text
+    proxies = {"http":"http://27.39.226.123:8123"}
+    html = requests.get(url, headers = headers).text
     j=re.search(r'.*<script\ssrc=\"\/\/(cdn.jandan.net\/static\/min.*?)\"><\/script>.*',html)
     jsFileUrl="http://"+j.group(1)
     jsFile=requests.get(jsFileUrl,headers=headers).text
@@ -79,35 +82,38 @@ def getConstantAndHash():
     constant=c.group(1)
 
     prePage=BeautifulSoup(html,"lxml")
-    resultList=[]
+    hashList=[]
     for item in prePage.select('.img-hash'):
-        resultList.append(item.text)
-    return constant,resultList
+        hashList.append(item.text)
+    return constant,hashList
 
-def spider():
-    result=getConstantAndHash()
-    constant=result[0]
-    hashList=result[1]
-
-    indexList=[]
-    for i in range(5):
-        index=int(random.random()*len(hashList))
-        while index in indexList:
-            index=int(random.random()*len(hashList))
-        indexList.append(index)
-
-    for index in indexList:
-        imgHash=hashList[index]
+def spider(constant,hashList):
+    index = 0
+    os.chdir('./picture')
+    for imgHash in hashList:
         url='http:'+parse(imgHash,constant)
         replace=re.match(r'(.*\.sinaimg\.cn\/)(\w+)(\/.+\.gif)',url)
         if replace:
             url=replace.group(1)+'large'+replace.group(3)
         e=re.match(r'.*(\.\w+)',url)
         extensionName=e.group(1)
-        with open (str(index)+extensionName, 'wb') as f:
-            headers['host']='wx3.sinaimg.cn'
-            f.write(requests.get(url,headers=headers).content)
-            f.close()
+        try:
+            with open ("pao67"+str(index)+extensionName, 'wb') as f:
+                headers['host']='wx3.sinaimg.cn'
+                f.write(requests.get(url,headers=headers).content)
+                f.close()
+            print("第 %d 页第 %d 张图片写入完成" %(page,index))
+        except:
+            print('出现异常')
+            continue
+        time.sleep(1)
+        index = index +1
 
 if __name__=='__main__':
-    spider()
+    print("start download")
+    page = 73;
+    url = "https://jandan.net/ooxx/page-"+ str(page) + "#comments"
+    result=getConstantAndHash(url)
+    constant=result[0]
+    hashList=result[1]
+    spider(constant,hashList)
