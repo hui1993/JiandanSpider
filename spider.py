@@ -90,7 +90,7 @@ def getConstantAndHash(url):
 def spider(constant,hashList):
     index = 0
     if not os.path.isdir('./picture'):
-        os.makedirs(new_path)
+        os.makedirs('./picture')
     os.chdir('./picture')
     for imgHash in hashList:
         url='http:'+parse(imgHash,constant)
